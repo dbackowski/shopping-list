@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -23,6 +24,24 @@ func listItems(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, items)
 }
 
+func addItem(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == "POST" {
+		var item Item
+
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			w.WriteHeader(http.StatusProcessing)
+			return
+		}
+		item.UUID = generateUUID()
+		items = append(items, item)
+		json.NewEncoder(w).Encode(item)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func generateUUID() string {
 	newUUID, err := exec.Command("uuidgen").Output()
 
@@ -40,6 +59,7 @@ func main() {
 	fs := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/", listItems)
+	mux.HandleFunc("/create", addItem)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
