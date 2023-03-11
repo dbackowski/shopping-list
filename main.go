@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 )
 
 var tmpl *template.Template
@@ -31,12 +32,43 @@ func addItem(w http.ResponseWriter, r *http.Request) {
 		var item Item
 
 		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-			w.WriteHeader(http.StatusProcessing)
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
+
 		item.UUID = generateUUID()
 		items = append(items, item)
 		json.NewEncoder(w).Encode(item)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func updateItem(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == "PUT" {
+		id := strings.TrimPrefix(r.URL.Path, "/update/")
+
+		if len(id) == 0 {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+
+		for i, v := range items {
+			if v.UUID == id {
+				var item = items[i]
+
+				if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+					w.WriteHeader(http.StatusUnprocessableEntity)
+					return
+				}
+
+				items[i] = item
+			}
+		}
+
+		json.NewEncoder(w).Encode(items)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -49,7 +81,7 @@ func generateUUID() string {
 		log.Fatal(err)
 	}
 
-	return string(newUUID)
+	return strings.TrimSuffix(string(newUUID), "\n")
 }
 
 func main() {
@@ -60,6 +92,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/", listItems)
 	mux.HandleFunc("/create", addItem)
+	mux.HandleFunc("/update/", updateItem)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
