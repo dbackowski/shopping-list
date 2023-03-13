@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os/exec"
@@ -19,6 +20,11 @@ type Item struct {
 
 var items = []Item{
 	{UUID: generateUUID(), Name: "Eggs x 10", Done: false},
+}
+
+func alive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, "{\"alive\": true}")
 }
 
 func listItems(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +97,7 @@ func main() {
 	fs := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/", listItems)
+	mux.HandleFunc("/alive", alive)
 	mux.HandleFunc("/create", addItem)
 	mux.HandleFunc("/update/", updateItem)
 
