@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -11,8 +10,6 @@ import (
 	"regexp"
 	"strings"
 )
-
-var tmpl *template.Template
 
 type Item struct {
 	UUID string
@@ -37,6 +34,8 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 	case match(p, "/static/([^/]+[css|js]$)"):
 		h = get(serveStaticFiles)
 	case match(p, "/"):
+		h = get(serveIndex)
+	case match(p, "/items"):
 		h = get(listItems)
 	case match(p, "/alive"):
 		h = get(alive)
@@ -104,13 +103,18 @@ func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./static/index.html")
+}
+
 func alive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	io.WriteString(w, "{\"alive\": true}")
 }
 
 func listItems(w http.ResponseWriter, r *http.Request) {
-	tmpl.Execute(w, items)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
 }
 
 func addItem(w http.ResponseWriter, r *http.Request) {
@@ -164,6 +168,5 @@ func generateUUID() string {
 }
 
 func main() {
-	tmpl = template.Must(template.ParseFiles("templates/index.gohtml"))
 	log.Fatal(http.ListenAndServe(":8080", http.HandlerFunc(Serve)))
 }
