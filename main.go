@@ -134,15 +134,14 @@ func addItem(w http.ResponseWriter, r *http.Request) {
 
 func (h withId) updateItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id := strings.TrimPrefix(r.URL.Path, "/update/")
 
-	if len(id) == 0 {
+	if len(h.id) == 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	for i, v := range items {
-		if v.UUID == id {
+		if v.UUID == h.id {
 			var item = items[i]
 
 			if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
