@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -33,6 +34,8 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 
 	p := r.URL.Path
 	switch {
+	case match(p, "/static/([^/]+[css|js]$)"):
+		h = get(serveStaticFiles)
 	case match(p, "/"):
 		h = get(listItems)
 	case match(p, "/alive"):
@@ -56,8 +59,10 @@ func match(path, pattern string, vars ...*string) bool {
 		return false
 	}
 
-	for i, match := range matches[1:] {
-		*vars[i] = match
+	if len(vars) > 0 {
+		for i, match := range matches[1:] {
+			*vars[i] = match
+		}
 	}
 
 	return true
@@ -84,6 +89,19 @@ func allowMethod(h http.HandlerFunc, method string) http.HandlerFunc {
 		}
 		h(w, r)
 	}
+}
+
+func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
+	var path = "." + r.URL.Path
+
+	_, error := os.Stat(path)
+
+	if os.IsNotExist(error) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	http.ServeFile(w, r, path)
 }
 
 func alive(w http.ResponseWriter, r *http.Request) {
@@ -146,10 +164,6 @@ func generateUUID() string {
 }
 
 func main() {
-	mux := http.NewServeMux()
 	tmpl = template.Must(template.ParseFiles("templates/index.gohtml"))
-
-	fs := http.FileServer(http.Dir("./static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(":8080", http.HandlerFunc(Serve)))
 }
