@@ -6,11 +6,12 @@ const fetchItems = async () => {
 
   items.forEach((item) => {
     const li = document.createElement('li')
-    li.textContent = item.Name
+    li.textContent = item.Name;
+    li.dataset.uuid = item.UUID;
     if (item.Done) {
       li.className = 'done';
     }
-    ul.append(li)
+    ul.append(li);
   });
 
   document.querySelector('#items').append(ul);
@@ -25,7 +26,7 @@ const addNewItem = async (evt) => {
     Name: newItemName,
   };
 
-  const response = await fetch('/create', {
+  await fetch('/create', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
