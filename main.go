@@ -21,9 +21,7 @@ type withId struct {
 	id string
 }
 
-var items = []Item{
-	{UUID: generateUUID(), Name: "Eggs x 10", Done: false},
-}
+var items = []Item{}
 
 func Serve(w http.ResponseWriter, r *http.Request) {
 	var h http.Handler
