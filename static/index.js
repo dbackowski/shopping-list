@@ -37,7 +37,7 @@ const addNewItem = async (evt) => {
     Name: newItemName,
   };
 
-  await fetch('/create', {
+  await fetch('/items/create', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ const toggleDone = async (evt) => {
     Done: done === 'true' ? false : true
   };
 
-  await fetch(`/update/${uuid}`, {
+  await fetch(`/items/update/${uuid}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'

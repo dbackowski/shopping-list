@@ -31,15 +31,15 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case match(p, "/static/([^/]+[css|js]$)"):
 		h = get(serveStaticFiles)
+	case match(p, "/alive"):
+		h = get(alive)
 	case match(p, "/"):
 		h = get(serveIndex)
 	case match(p, "/items"):
 		h = get(listItems)
-	case match(p, "/alive"):
-		h = get(alive)
-	case match(p, "/create"):
+	case match(p, "/items/create"):
 		h = post(addItem)
-	case match(p, "/update/([^/]+)", &id):
+	case match(p, "/items/update/([^/]+)", &id):
 		h = put(withId{id}.updateItem)
 	default:
 		http.NotFound(w, r)
