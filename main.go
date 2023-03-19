@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"regexp"
-	"strings"
+
+	"github.com/google/uuid"
 )
 
 type Item struct {
@@ -155,13 +155,8 @@ func (h withId) updateItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateUUID() string {
-	newUUID, err := exec.Command("uuidgen").Output()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return strings.TrimSuffix(string(newUUID), "\n")
+	id := uuid.New()
+	return id.String()
 }
 
 func main() {
