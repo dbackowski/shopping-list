@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -94,6 +95,16 @@ func allowMethod(h http.HandlerFunc, method string) http.HandlerFunc {
 	}
 }
 
+func findItemIndexByUuid(uuid string) (int, error) {
+	for i, v := range items {
+		if v.UUID == uuid {
+			return i, nil
+		}
+	}
+
+	return -1, fmt.Errorf("UUID: %s not found in items", uuid)
+}
+
 func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
 	var path = "." + r.URL.Path
 
@@ -144,18 +155,21 @@ func (h withId) updateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, v := range items {
-		if v.UUID == h.id {
-			var item = items[i]
+	item_index, err := findItemIndexByUuid(h.id)
 
-			if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				return
-			}
-
-			items[i] = item
-		}
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
+
+	var item = items[item_index]
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	items[item_index] = item
 
 	json.NewEncoder(w).Encode(items)
 }
@@ -168,12 +182,14 @@ func (h withId) deleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, v := range items {
-		if v.UUID == h.id {
-			items = append(items[:i], items[i+1:]...)
-		}
+	item_index, err := findItemIndexByUuid(h.id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 
+	items = append(items[:item_index], items[item_index+1:]...)
 	w.WriteHeader(http.StatusNoContent)
 }
 
