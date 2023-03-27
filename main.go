@@ -41,6 +41,8 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 		h = post(addItem)
 	case match(p, "/items/update/([^/]+)", &id):
 		h = put(withId{id}.updateItem)
+	case match(p, "/items/delete/([^/]+)", &id):
+		h = delete(withId{id}.deleteItem)
 	default:
 		http.NotFound(w, r)
 		return
@@ -75,6 +77,10 @@ func post(h http.HandlerFunc) http.HandlerFunc {
 
 func put(h http.HandlerFunc) http.HandlerFunc {
 	return allowMethod(h, "PUT")
+}
+
+func delete(h http.HandlerFunc) http.HandlerFunc {
+	return allowMethod(h, "DELETE")
 }
 
 func allowMethod(h http.HandlerFunc, method string) http.HandlerFunc {
@@ -152,6 +158,23 @@ func (h withId) updateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(items)
+}
+
+func (h withId) deleteItem(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if len(h.id) == 0 {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	for i, v := range items {
+		if v.UUID == h.id {
+			items = append(items[:i], items[i+1:]...)
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func generateUUID() string {
