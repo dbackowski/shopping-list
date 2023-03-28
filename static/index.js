@@ -5,16 +5,20 @@ const fetchItems = async () => {
   const ul = document.createElement('ul');
 
   items.forEach((item) => {
-    const li = document.createElement('li')
-    const span = document.createElement('span')
-    const button = document.createElement('button')
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    const doneButton = document.createElement('button');
+    const removeButton = document.createElement('button');
 
     span.textContent = item.Name;
-    button.textContent = 'Done';
-    button.addEventListener('click', toggleDone);
+    doneButton.textContent = 'Done';
+    doneButton.addEventListener('click', toggleDone);
+    removeButton.textContent = 'Remove';
+    removeButton.addEventListener('click', removeItem);
 
-    li.append(button)
-    li.append(span)
+    li.append(doneButton);
+    li.append(removeButton);
+    li.append(span);
     li.dataset.uuid = item.UUID;
     li.dataset.done = item.Done;
 
@@ -26,7 +30,7 @@ const fetchItems = async () => {
   });
 
   document.querySelector('#items').append(ul);
-}
+};
 
 const addNewItem = async (evt) => {
   if (evt.key !== "Enter") return;
@@ -46,7 +50,7 @@ const addNewItem = async (evt) => {
   });
 
   window.location.reload();
-}
+};
 
 const toggleDone = async (evt) => {
   const { uuid, done } = evt.target.parentElement.dataset;
@@ -64,7 +68,20 @@ const toggleDone = async (evt) => {
   });
 
   window.location.reload();
-}
+};
+
+const removeItem = async (evt) => {
+  const { uuid } = evt.target.parentElement.dataset;
+
+  await fetch(`/items/delete/${uuid}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+  });
+
+  window.location.reload();
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchItems();
