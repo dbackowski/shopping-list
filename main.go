@@ -25,33 +25,34 @@ type withId struct {
 var items = []Item{}
 
 func Serve(w http.ResponseWriter, r *http.Request) {
-	var h http.Handler
 	var id string
 
-	p := r.URL.Path
 	switch {
-	case match(p, "/static/([^/]+[css|js]$)"):
-		h = get(serveStaticFiles)
-	case match(p, "/alive"):
-		h = get(alive)
-	case match(p, "/"):
-		h = get(serveIndex)
-	case match(p, "/items"):
-		h = get(listItems)
-	case match(p, "/items/create"):
-		h = post(addItem)
-	case match(p, "/items/update/([^/]+)", &id):
-		h = put(withId{id}.updateItem)
-	case match(p, "/items/delete/([^/]+)", &id):
-		h = delete(withId{id}.deleteItem)
+	case match(r, "/static/([^/]+[css|js]$)", "GET"):
+		serveStaticFiles(w, r)
+	case match(r, "/alive", "GET"):
+		alive(w, r)
+	case match(r, "/", "GET"):
+		serveIndex(w, r)
+	case match(r, "/items", "GET"):
+		listItems(w, r)
+	case match(r, "/items/create", "POST"):
+		addItem(w, r)
+	case match(r, "/items/update/([^/]+)", "PUT", &id):
+		withId{id}.updateItem(w, r)
+	case match(r, "/items/delete/([^/]+)", "DELETE", &id):
+		withId{id}.deleteItem(w, r)
 	default:
 		http.NotFound(w, r)
-		return
 	}
-	h.ServeHTTP(w, r)
 }
 
-func match(path, pattern string, vars ...*string) bool {
+func match(r *http.Request, pattern string, method string, vars ...*string) bool {
+	if method != r.Method {
+		return false
+	}
+
+	path := r.URL.Path
 	regex := regexp.MustCompile("^" + pattern + "$")
 	matches := regex.FindStringSubmatch(path)
 
@@ -66,33 +67,6 @@ func match(path, pattern string, vars ...*string) bool {
 	}
 
 	return true
-}
-
-func get(h http.HandlerFunc) http.HandlerFunc {
-	return allowMethod(h, "GET")
-}
-
-func post(h http.HandlerFunc) http.HandlerFunc {
-	return allowMethod(h, "POST")
-}
-
-func put(h http.HandlerFunc) http.HandlerFunc {
-	return allowMethod(h, "PUT")
-}
-
-func delete(h http.HandlerFunc) http.HandlerFunc {
-	return allowMethod(h, "DELETE")
-}
-
-func allowMethod(h http.HandlerFunc, method string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if method != r.Method {
-			w.Header().Set("Allow", method)
-			http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		h(w, r)
-	}
 }
 
 func findItemIndexByUuid(uuid string) (int, error) {
